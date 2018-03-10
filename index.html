@@ -1,0 +1,282 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Welcome to Phaser</title>
+    <script src="//cdn.jsdelivr.net/npm/phaser@3.1.1/dist/phaser.js"></script>
+  </head>
+  <body>
+    
+    <script  type='text/javascript'>
+      var config = {
+        type: Phaser.AUTO,
+        width:800,
+        height:600,
+        scene: {
+          preload: preload,
+          create: create,
+          update: update
+        },
+        physics: {
+          default: 'arcade',
+          arcade: {
+              gravity: { y: 300 },
+              debug: false
+        }
+    }
+      };
+      
+      var game = new Phaser.Game(config);
+      
+      function preload ()
+      {
+        this.load.image('platform','./assets/platform.png');
+        this.load.image('sky','./assets/sky.png');
+        this.load.image('star','./assets/star.png');
+        this.load.image('bomb','./assets/bomb.png');
+        this.load.spritesheet(
+          'monkey',  // Key
+          './assets/dude.png',  // Location
+          {frameWidth: 32, frameHeight: 48} // Frames
+        );
+      }
+      
+      var platforms;
+      function create ()
+      {
+        
+        sky = this.add.image(400,300,'sky');
+         platforms = this.physics.add.staticGroup();
+
+        platforms.create(400, 568, 'platform').setScale(2).refreshBody();
+    
+        platforms.create(600, 400, 'platform');
+        platforms.create(50, 250, 'platform');
+        platforms.create(750, 220, 'platform');
+        star = this.add.image(400,300,'star');
+        bomb = this.add.image(100,500,'bomb');
+        
+        player = this.physics.add.sprite(100,450, 'monkey');
+        player.setCollideWorldBounds(true);
+        
+        this.anims.create({
+          key: 'left',
+          frames: this.anims.generateFrameNumbers('monkey',{start: 0, end: 3}),
+          frameRate: 10,
+          repeat: -1
+        });
+        
+        this.anims.create({
+          key:'turn',
+          frames: [{key: 'monkey', frame: 4}],
+          frameRate: 20
+        });
+        
+        this.anims.create({
+          key: 'right',
+          frames: this.anims.generateFrameNumbers('monkey',{start: 5, end: 8}),
+          frameRate: 10,
+          repeat: -1
+        });
+        
+        this.physics.add.collider(player,platforms);
+        
+        cursors = this.input.keyboard.createCursorKeys();
+        
+        star = this.physics.add.group({
+          key: 'star',
+          repeate: 11,
+          setXY: {x:12, y:0, stepX: 70}
+        });
+        
+        star.children.iterate(function (child) {
+          child.setBounceY(Phaser.Math.FloatBetween(0.4,0.8));
+        });
+      }
+      
+      function update ()
+      {
+        if (cursors.left.isDown)
+        {
+          player.setVelocityX(-160);
+          player.anims.play('left',true);
+        }
+        else if (cursors.right.isDown)
+        {
+          player.setVelocityX(160);
+          player.anims.play('right',true);
+        }
+        else
+        {
+          player.setVelocityX(0);
+          player.anims.play('turn');
+        }
+        
+        if (cursors.up.isDown && player.body.touching.down)
+        {
+          player.setVelocityY(-330);
+        }
+      }
+    </script>
+    <!--
+    <script>
+    var game = new Phaser.Game(800, 600, Phaser.AUTO, 'game');
+    
+      // https://phaser.io/tutorials/making-your-first-phaser-game/index
+      var game = new Phaser.Game(800, 900, Phaser.AUTO, '', {
+        preload: preload,
+        create: create,
+        update: update
+      });
+
+      function preload() {
+          /*
+            This function loads in assets before your game runs.
+          */
+          game.load.image('kirby', './kirby.png');
+          
+          game.physics.startSystem(Phaser.Physics.ARCADE); // This apllies physics to both sprites
+      }
+
+      function create() {
+          /*
+            This adds a sprite to the world.
+            
+            However, you can add more than just sprites.
+            
+            If you want to do any type of animations,
+            you would do that here as well.
+            
+            The same goes for playing the animations.
+          */
+          
+          enemy = game.add.sprite(700,200,'kirby');
+          
+          enemy.anchor.set(0.5);
+          
+          enemy.inputEnabled = true;
+          enemy.scale.setTo(0.3);
+          
+          kirby = game.add.sprite(0,0,'kirby');
+          
+          kirby.anchor.set(0.5);
+          
+          kirby.inputEnabled = true;
+          kirby.scale.setTo(0.5);
+          
+       
+          //kirby.events.onInputDown.add(listener, this);
+          
+          game.physics.arcade.enable([kirby,enemy]); // This enables physics on both sprites
+          
+          kirby.body.collideWorldBounds = true; // Forces sprites to stay on screen
+          enemy.body.collideWorldBounds = true; // Forces sprites to stay on screen
+          
+          enemy.input.pixelPerfectOver = true;
+          
+          kirby.body.onCollide = new Phaser.Signal();
+          kirby.body.onCollide.add(decreaseHealth, this);
+          kirby.body.setSize(325,170,0,0);
+          
+          kirby.stamina = 100;
+          
+          kirby.decreaseStamina = function (sprite) {
+              this.sprite = sprite;
+
+              if (this.sprite.stamina > 0) {
+                this.sprite.stamina = this.sprite.stamina - 0.2;
+              }
+              else return
+          }
+          
+          kirby.increaseStamina = function(sprite) {
+              this.sprite = sprite;
+              
+              this.sprite.stamina = 100;
+          }
+          
+           staminaBar = game.add.text(600,40, `Stamina:  ${kirby.stamina}`, { fill: '#ffffff'}); // I use this to get text.
+           
+           kirby.health = 75;
+           
+           healthBar = game.add.text(600,16, `Health:  ${kirby.health}`, { fill: '#ffffff'});
+
+          /* TODO:  Add in a health property.  Also, add in the ability to decrease health and increase health.
+          Lastly, try to think of an event that will utilize this.
+          
+          Stretch:  Get the stamina and health data to show on your screen.  */
+      }
+
+      function update() {
+          /*
+          This runs 60 times a second.
+          */
+          
+          if (kirby.stamina < 0) {
+            staminaBar.setText(`Stamina: 0`);
+          } else {
+            staminaBar.setText(`Stamina: ${Math.floor(kirby.stamina)} `); // updates stamina bar
+          }
+        
+          healthBar.setText( `Health: ${Math.floor(kirby.health)} `); // updates health bar
+          if (kirby.stamina > 0) {
+              if (game.input.keyboard.isDown(Phaser.Keyboard.LEFT))
+              {
+                  kirby.x -= 4;
+                  kirby.decreaseStamina(kirby);
+              }
+              else if (game.input.keyboard.isDown(Phaser.Keyboard.RIGHT))
+              {
+                  kirby.x +=4;
+                  kirby.decreaseStamina(kirby);
+              }
+              if (game.input.keyboard.isDown(Phaser.Keyboard.UP))
+              {
+                  kirby.y -= 4;
+                  kirby.decreaseStamina(kirby);
+              }
+              else if (game.input.keyboard.isDown(Phaser.Keyboard.DOWN))
+              {
+                  kirby.y +=4;
+                  kirby.decreaseStamina(kirby);
+              }
+          } else {
+              setTimeout(function() {
+                kirby.increaseStamina(kirby);
+              }, 5000)
+                
+            }
+            
+            
+            
+            game.physics.arcade.collide(kirby,enemy); //checks if kirby and enemy are touching eachother
+      }
+      
+      function decreaseHealth(sprite) {
+        console.log("Is Hit");
+        this.sprite = sprite;
+        
+        if (this.sprite.health > 0) {
+          this.sprite.health -= 0.5;
+        }
+        
+         if (this.sprite.health <= 0) {
+            increaseHealth(this.sprite);
+        
+         }
+        
+      }
+      
+      function increaseHealth(sprite) {
+        this.sprite = sprite;
+        
+        if (this.sprite.health <= 0) {
+          this.sprite.health = 75;
+        }
+      }
+    </script>
+    
+    */
+    -->
+  </body>
+</html>
